@@ -7,7 +7,7 @@ import evalouation.evaluator as eval
 
 #from community import modularity
 import pandas as pd
-from calculation_helper import overlap, unit, min_norm, normalized_overlap,  overlap_generator
+from calculation_helper import overlap, unit, min_norm, normalized_overlap,mea_sim,  overlap_generator
 #from print_and_read import json_dumper
 
 class LabelPropagator:
@@ -36,6 +36,8 @@ class LabelPropagator:
             self.weights  = overlap_generator(unit, self.graph)
         elif weighting == "min_norm":
             self.weights  = overlap_generator(min_norm, self.graph)
+        elif weighting == "mea_sim":
+            self.weights = overlap_generator(mea_sim, self.graph)
         else:
             self.weights  = overlap_generator(normalized_overlap, self.graph)
 

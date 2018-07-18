@@ -34,7 +34,8 @@ def parameter_parser():
 
     parser.add_argument('--weighting',
                         nargs = '?',
-                        default = 'overlap',
+                        #default = 'overlap',
+                        default = 'mea_sim',
 	                help = 'Overlap weighting.')
 
     parser.add_argument('--rounds',
