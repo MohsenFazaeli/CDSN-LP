@@ -5,6 +5,7 @@ import random
 from tqdm import tqdm
 import config
 import evalouation.evaluator as eval
+import sys, traceback
 
 #For drawing
 import zipfile
@@ -13,7 +14,7 @@ try:
 except ImportError:
     from io import BytesIO as StringIO
 
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 #import networkx as nx
 
 
@@ -29,21 +30,30 @@ def make_a_pick(G, source, neighbors):
         #print G[2]
         #print [n for n in neighbors]
         neighbor_label = G.nodes[neighbor]['poslabel']
+        mul=1
+        if G[source][neighbor]['weight'] < 0:
+            mul=1
         if neighbor_label in scores.keys():
-            scores[neighbor_label] = scores[neighbor_label] + G[source][neighbor]['weight']
+            scores[neighbor_label] = scores[neighbor_label] + G[source][neighbor]['weight']*mul
         else:
-            scores[neighbor_label] = G[source][neighbor]['weight']
+            scores[neighbor_label] = G[source][neighbor]['weight']*mul
     top = [key for key, val in scores.iteritems() if val == max(scores.values())]
+    global index
+    #if len(top)>1 and index>11:
+        #return G.nodes[source]['poslabel']
     return random.sample(top, 1)[0]
 
 
 def do_a_propagation(G):
     """
     """
-    random.seed(1)
+    #random.seed(1)
     #print G.nodes()
     p=[i for i in G.nodes()]
     random.shuffle(p)
+    print(p[1])
+    print(p[2])
+    #sys.exit(0)
     for node in tqdm(p):
         neighbors = G.neighbors(node)
 
@@ -63,8 +73,9 @@ def do_a_propagation(G):
 
 
 def do_a_series_of_propagations(G):
+    global index
     index = 0
-    while index < 10 :
+    while index < 15 :
         index = index + 1
         print("Label propagation round: " + str(index))
         do_a_propagation(G)
@@ -93,6 +104,13 @@ def create_and_run_model(args):
 
     edges, edges_color = zip(*nx.get_edge_attributes(G, 'color').items())
     print edges_color
+    comMap={}
+    for i in G.nodes:
+        comMap[i]=G.nodes[i]['poslabel']
+
+    eval.compute_Modularity(G, comMap)
+
+
     val_map = {6: 1.0, 13: 0.5714285714285714, 16: 0.0} #tribe
     val_map = {7: 1.0, 13: 0.5714285714285714, 8: 0.0} #tribe
 
@@ -130,7 +148,7 @@ def create_and_run_model(args):
     #print [n for n in G.neighbors(2)]
     #print [n for n in G.neighbors(3)]
     #print [n for n in G.neighbors(4)]
-
+"""
     w_p = {int(n): 0.0 for n in G.nodes}
     w_n = {int(n): 0.0 for n in G.nodes}
 
@@ -179,11 +197,8 @@ def create_and_run_model(args):
     #print
     #print normfacto*(sum_-min_2)
     print "final Q singed is:" + str(normfacto*(sum_+min_2))
-    comMap={}
-    for i in G.nodes:
-        comMap[i]=G.nodes[i]['poslabel']
+"""
 
-    eval.compute_Modularity(G,comMap)
 
 
 if __name__ == "__main__":
