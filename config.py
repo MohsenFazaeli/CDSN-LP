@@ -25,4 +25,5 @@ datasets = {
 
 
 
-dataDirecoty="/home/mf/Thesis/Dataset"
+#dataDirecoty="/home/mf/Thesis/Dataset" uni
+dataDirecoty="/home/mf/PycharmProjects/DataSet" #home

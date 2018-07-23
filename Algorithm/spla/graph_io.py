@@ -9,7 +9,8 @@ def graph_reader(input_path):
 
 
     #graph = nx.from_edgelist(edges.values.tolist())
-    edges_list=[ (d[0],d[1],{'weight':d[2], 'color':'g' if d[2]>0 else 'r' }) for d in edges.values.tolist()]
+    #edges_list=[ (d[0],d[1],{'weight':d[2], 'color':'g' if d[2]>0 else 'r' }) for d in edges.values.tolist()]
+    edges_list=[ (d[0],d[1],{'weight':1 if d[2]>0 else -1 }) for d in edges.values.tolist()]
     #edges_list=[ (d[0],d[1],{'weight':1 if d[2]>0 else -1, 'color':'g' if d[2]>0 else 'r' }) for d in edges.values.tolist()]
     #print edges_list
     graph = nx.from_edgelist(edges_list)

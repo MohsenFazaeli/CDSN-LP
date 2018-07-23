@@ -15,11 +15,11 @@ def parameter_parser():
                         nargs = '?',
                         #default = './data/politician_edges.csv',
                         #default = './data/soc-sign-epinions.csv',
-                        default = cfg.dataDirecoty+'/compress/Highland-tribes.csv',
+                        #default = cfg.dataDirecoty+'/compress/Highland-tribes.csv',
                         #default = './data/SNM_INFL.csv',
                         #default = './data/SNM_AFF4.csv',
                         #default = cfg.dataDirecoty+'/basic/usSuprimeADJunw.csv',
-                        #default = cfg.dataDirecoty+'/compress/soc-sign-bitcoinotc.csv',
+                        default = cfg.dataDirecoty+'/compress/soc-sign-bitcoinotc.csv',
                         #default = cfg.dataDirecoty+'/compress/soc-sign-bitcoinalpha.csv',
                         #default = './data/basic/stranke94.csv',
                         #default='./data/edg/bitcoin_alpha.edg_uWuD',
@@ -34,8 +34,9 @@ def parameter_parser():
 
     parser.add_argument('--weighting',
                         nargs = '?',
-                        #default = 'overlap',
-                        default = 'mea_sim',
+                        default = 'overlap',
+                        #default = 'min_norm',
+                        #default = 'mea_sim',
 	                help = 'Overlap weighting.')
 
     parser.add_argument('--rounds',

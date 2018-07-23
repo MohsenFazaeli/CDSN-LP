@@ -87,6 +87,7 @@ def do_a_series_of_propagations(G):
 def create_and_run_model(args):
     G = graph_reader(args.input)
     #print G.nodes
+    #print G.edges
 
     labels = {i: {'poslabel': i, 'negLabels': -1} for i in G.nodes}
     #print labels

@@ -11,10 +11,6 @@ import random
 import networkx as nx
 
 from community_status import Status
-import config as cfg
-import  Algorithm.spla.graph_io as gio
-import evalouation.evaluator as eval
-
 
 __author__ = """Thomas Aynaud (thomas.aynaud@lip6.fr)"""
 #    Copyright (C) 2009 by
@@ -217,7 +213,6 @@ def best_partition(graph, partition=None,
                                 weight,
                                 resolution,
                                 randomize)
-    print(dendo)
     return partition_at_level(dendo, len(dendo) - 1)
 
 
@@ -295,75 +290,27 @@ def generate_dendrogram(graph,
         return [part]
 
     current_graph = graph.copy()
-    #status = Status()
-    #status.init(current_graph, weight, part_init)
-
+    status = Status()
+    status.init(current_graph, weight, part_init)
     status_list = list()
-
-    posStatus = Status()
-    posGraph=nx.Graph();
-    posGraph.add_nodes_from(current_graph.nodes)
-    posGraph.add_edges_from([(a,b,{'weight':c }) for (a,b,c) in current_graph.edges.data('weight', default=1) if c>0])
-    posStatus.init(posGraph, weight, part_init)
-    #posStatus.list=list()
-
-    negStatus = Status()
-    negGraph = nx.Graph();
-    negGraph.add_nodes_from(current_graph.nodes)
-    negGraph.add_edges_from([(a, b, {'weight': -c}) for (a, b, c) in current_graph.edges.data('weight', default=-1) if c < 0])
-    negStatus.init(negGraph, weight, part_init)
-    #negStatus.list = list()
-    print(posStatus.total_weight )
-    print(negStatus.total_weight )
-    print(len(negGraph.nodes()),len(posGraph.nodes()))
-    print(len(negGraph.edges()),len(posGraph.edges()))
-    #print(negGraph.nodes(),negGraph.edges())
-    #print(current_graph.edges.data('weight', default=-1))
-    #print(current_graph.edges.data('weight', default=0))
-
-
-    __one_level(posGraph ,negGraph, posStatus ,negStatus , weight, resolution, randomize)
-    #TODO  Edit one_levl function
-    posMul= float(posStatus.total_weight /(posStatus.total_weight + negStatus.total_weight)) #Multip by 2 is impactless
-    negMul= float(negStatus.total_weight /(posStatus.total_weight + negStatus.total_weight)) #Multip by 2 is impactless
-    new_mod = posMul*__modularity(posStatus)- negMul*__modularity(negStatus)
-    #TODO check modularity works correct
-
-    partition = __renumber(posStatus.node2com)
+    __one_level(current_graph, status, weight, resolution, randomize)
+    new_mod = __modularity(status)
+    partition = __renumber(status.node2com)
     status_list.append(partition)
     mod = new_mod
-    #current_graph = induced_graph(partition, current_graph, weight)
-    #status.init(current_graph, weight)
-    posGraph = induced_graph(partition, posGraph, weight);
-    posStatus.init(posGraph, weight, part_init)
-
-    negGraph = induced_graph(partition, negGraph, weight);
-    negStatus.init(negGraph, weight, part_init)
-    print(" WHile ")
+    current_graph = induced_graph(partition, current_graph, weight)
+    status.init(current_graph, weight)
 
     while True:
-        print(" WHile ")
-
-        __one_level(posGraph, negGraph, posStatus, negStatus, weight, resolution, randomize)
-        #__one_level(current_graph, status, weight, resolution, randomize)
-        #new_mod = __modularity(status)
-        pos_mod = __modularity(posStatus)
-        neg_mod = __modularity(negStatus)
-        new_mod = posMul * pos_mod - negMul * neg_mod
-
-         #TODO Sth is not double
+        __one_level(current_graph, status, weight, resolution, randomize)
+        new_mod = __modularity(status)
         if new_mod - mod < __MIN:
             break
-        partition = __renumber(posStatus.node2com)
+        partition = __renumber(status.node2com)
         status_list.append(partition)
         mod = new_mod
-        posGraph = induced_graph(partition, posGraph, weight)
-        negGraph = induced_graph(partition, negGraph, weight)
-        posStatus.init(posGraph, weight)
-        negStatus.init(negGraph, weight)
-        print("\n\n\n our modularity: ",mod)
-    print("eow WHile ")
-
+        current_graph = induced_graph(partition, current_graph, weight)
+        status.init(current_graph, weight)
     return status_list[:]
 
 
@@ -472,100 +419,41 @@ def __randomly(seq, randomize):
     return seq
 
 
-def __one_level(posGraph,negGraph, posStatus,negStatus, weight_key, resolution, randomize):
+def __one_level(graph, status, weight_key, resolution, randomize):
     """Compute one level of communities
     """
-
     modified = True
     nb_pass_done = 0
-    posMul= float(posStatus.total_weight /(posStatus.total_weight + negStatus.total_weight)) #Multip by 2 is impactless
-    negMul= float(negStatus.total_weight /(posStatus.total_weight + negStatus.total_weight)) #Multip by 2 is impactless
-    new_mod = posMul*__modularity(posStatus)- negMul*__modularity(negStatus)
-
-    #cur_mod = __modularity(status)
-    cur_mod = new_mod
-
-    #new_mod = cur_mod
+    cur_mod = __modularity(status)
+    new_mod = cur_mod
 
     while modified and nb_pass_done != __PASS_MAX:
         cur_mod = new_mod
         modified = False
         nb_pass_done += 1
 
-        for node in __randomly(posGraph.nodes(), randomize):
-            com_node = posStatus.node2com[node]
-            print("___________________________")
-            print("for node: ",node," in com: ",com_node)
-
-            pos_degc_totw = posStatus.gdegrees.get(node, 0.) / (posStatus.total_weight * 2.)  # NOQA # ki/2m
-            print(pos_degc_totw)
-            neg_degc_totw = negStatus.gdegrees.get(node, 0.) / (negStatus.total_weight * 2.)  # NOQA # ki/2m
-            print(neg_degc_totw)
-
-            pos_neigh_communities = __neighcom(node, posGraph, posStatus, weight_key)
-
-            neg_neigh_communities = __neighcom(node, negGraph, negStatus, weight_key)
-
-
-            #remove_cost = - resolution * neigh_communities.get(com_node,0) + \               - ki,c + (kc-ki)/2m
-            #    (status.degrees.get(com_node, 0.) - status.gdegrees.get(node, 0.)) * degc_totw
-
-            pos_remove_cost = - resolution * pos_neigh_communities.get(com_node,0) + \
-               (posStatus.degrees.get(com_node, 0.) - posStatus.gdegrees.get(node, 0.)) * pos_degc_totw
-
-            neg_remove_cost = - resolution * neg_neigh_communities.get(com_node,0) + \
-               (negStatus.degrees.get(com_node, 0.) - negStatus.gdegrees.get(node, 0.)) * neg_degc_totw
-
-            remove_cost=posMul*pos_remove_cost-negMul*neg_remove_cost
-
+        for node in __randomly(graph.nodes(), randomize):
+            com_node = status.node2com[node]
+            degc_totw = status.gdegrees.get(node, 0.) / (status.total_weight * 2.)  # NOQA
+            neigh_communities = __neighcom(node, graph, status, weight_key)
+            remove_cost = - resolution * neigh_communities.get(com_node,0) + \
+                (status.degrees.get(com_node, 0.) - status.gdegrees.get(node, 0.)) * degc_totw
             __remove(node, com_node,
-                     pos_neigh_communities.get(com_node, 0.), posStatus)
-            __remove(node, com_node,
-                     neg_neigh_communities.get(com_node, 0.), negStatus)
-            #Todo _remove check
-
+                     neigh_communities.get(com_node, 0.), status)
             best_com = com_node
             best_increase = 0
-            #TODO upto here refined check for dnc
-            #print(type(pos_neigh_communities.keys()))
-            for com in __randomly(pos_neigh_communities.keys()+neg_neigh_communities.keys(),  # only joining posetive commuinty has bounous
+            for com, dnc in __randomly(neigh_communities.items(),
                                        randomize):
-
-                print("\n Itration \n")
-                print( neg_neigh_communities)
-                print( pos_neigh_communities)
-
-                #pos_incr =  resolution * pos_neigh_communities[com] - \
-                #       posStatus.degrees.get(com, 0.) * pos_degc_totw
-
-                pos_incr =  resolution * pos_neigh_communities.get(com, 0.) - \
-                       posStatus.degrees.get(com, 0.) * pos_degc_totw
-
-                neg_incr =  resolution * neg_neigh_communities.get(com, 0.) - \
-                       negStatus.degrees.get(com, 0.) * neg_degc_totw
-                        #remove_cost +
-                       #(status.degrees.get(com_node, 0.) * status.gdegrees.get(node, 0.)) * degc_totw
-                       #status.degrees.get(com, 0.) * degc_totw
-
-                incr = remove_cost + posMul * pos_incr - negMul * neg_incr
-
-
+                incr = remove_cost + resolution * dnc - \
+                       status.degrees.get(com, 0.) * degc_totw
                 if incr > best_increase:
                     best_increase = incr
                     best_com = com
             __insert(node, best_com,
-                     pos_neigh_communities.get(best_com, 0.), posStatus)
-            __insert(node, best_com,
-                     neg_neigh_communities.get(best_com, 0.), negStatus)
-
+                     neigh_communities.get(best_com, 0.), status)
             if best_com != com_node:
                 modified = True
-
-        pos_mod = __modularity(posStatus)
-        neg_mod = __modularity(negStatus)
-
-        new_mod = posMul * pos_mod - negMul * neg_mod
-
+        new_mod = __modularity(status)
         if new_mod - cur_mod < __MIN:
             break
 
@@ -573,7 +461,7 @@ def __one_level(posGraph,negGraph, posStatus,negStatus, weight_key, resolution, 
 def __neighcom(node, graph, status, weight_key):
     """
     Compute the communities in the neighborhood of node in the graph given
-    with the decomposition node2com  K_{i,in}
+    with the decomposition node2com
     """
     weights = {}
     for neighbor, datas in graph[node].items():
@@ -619,25 +507,17 @@ def __modularity(status):
 
 if __name__  == "__main__":
     #Basic usage
-    #G=nx.erdos_renyi_graph(100, 0.01)
-    #part = best_partition(G)
+    G=nx.erdos_renyi_graph(100, 0.01)
+    part = best_partition(G)
 
     #other example to display a graph with its community :
     #better with karate_graph() as defined in networkx examples
     #erdos renyi don't have true community structure
-    #G = nx.erdos_renyi_graph(30, 0.05)
-    #G = nx.karate_club_graph()
-    G = gio.graph_reader(cfg.dataDirecoty+'/compress/soc-sign-bitcoinotc.csv')
-    #G = gio.graph_reader(cfg.dataDirecoty+'/compress/Highland-tribes.csv')
-    #G = gio.graph_reader(cfg.dataDirecoty+'/basic/usSuprimeADJunw.csv')
-
-    print(G.__len__())
-    print(len(G.edges()))
-    #print(G[1][62])
+    G = nx.erdos_renyi_graph(30, 0.05)
+    G = nx.karate_club_graph()
     #first compute the best partition
     partition = best_partition(G)
     #drawing
-    """
     size = float(len(set(partition.values())))
     pos = nx.spring_layout(G)
     count = 0.
@@ -648,7 +528,3 @@ if __name__  == "__main__":
                                     node_color = str(count / size))
     nx.draw_networkx_edges(G, pos, alpha=0.5)
     plt.show()
-    """
-    #print (modularity(partition,G))
-    print(partition)
-    eval.compute_Modularity(G, partition)
